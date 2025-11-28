@@ -166,41 +166,48 @@ func getLanguagePreference() string {
 
 // generateCommitMessage calls the OpenRouter API to generate a commit message.
 func generateCommitMessage(apiKey, diff, language string) (*CommitMessage, error) {
-	var instruction string
+	var instruction, titleDesc, descriptionDesc string
+
 	if language == "Spanish" {
 		instruction = "Analiza el siguiente git diff y genera un título de commit conciso (máx. 70 caracteres) y una descripción detallada del commit. Responde en formato JSON de acuerdo con el esquema:"
+		titleDesc = "Título conciso del mensaje de commit"
+		descriptionDesc = "Descripción detallada del mensaje de commit"
 	} else {
 		instruction = "Analyze the following git diff and generate a concise commit title (max 70 chars) and a detailed commit description. Respond in JSON format according to the schema:"
+		titleDesc = "Concise commit message title"
+		descriptionDesc = "Detailed commit message description"
 	}
 
-	prompt := fmt.Sprintf("%s\n\n```json\n%s\n```\n\nGit Diff:\n```diff\n%s\n```", instruction, `
+	promptSchema := fmt.Sprintf(`
 		{
 		  "type": "object",
 		  "properties": {
 			"title": {
 			  "type": "string",
-			  "description": "Concise commit message title"
+			  "description": "%s"
 			},
 			"description": {
 			  "type": "string",
-			  "description": "Detailed commit message description"
+			  "description": "%s"
 			}
 		  },
 		  "required": ["title", "description"],
 		  "additionalProperties": false
 		}
-		`, diff)
+		`, titleDesc, descriptionDesc)
+
+	prompt := fmt.Sprintf("%s\n\n```json\n%s\n```\n\nGit Diff:\n```diff\n%s\n```", instruction, promptSchema, diff)
 
 	schema := map[string]interface{}{
 		"type": "object",
 		"properties": map[string]interface{}{
 			"title": map[string]interface{}{
 				"type":        "string",
-				"description": "Concise commit message title",
+				"description": titleDesc,
 			},
 			"description": map[string]interface{}{
 				"type":        "string",
-				"description": "Detailed commit message description",
+				"description": descriptionDesc,
 			},
 		},
 		"required":             []string{"title", "description"},
